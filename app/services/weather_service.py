@@ -1,6 +1,6 @@
 from app.database.database import SessionLocal
+from sqlalchemy.exc import SQLAlchemyError
 import httpx
-# import asyncio
 from app.settings import settings
 from app.database.models import Weather
 from httpx import TimeoutException
@@ -22,33 +22,48 @@ CITIES = [
 async def get_and_save_indian_weather_data():
     try:
         db = SessionLocal()
-        for city in CITIES:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    "https://api.openweathermap.org/data/2.5/weather",
-                    params={"q": city, "appid": settings.open_weather_api}
+
+        async with httpx.AsyncClient() as client:
+            for city in CITIES:
+                try:
+                    response = await client.get(
+                        "https://api.openweathermap.org/data/2.5/weather",
+                        params={"q": city, "appid": settings.open_weather_api}
+                    )
+                    response.raise_for_status()
+                except Exception as e:
+                    print(f"Failed to fetch weather for {city}: {e}")
+                    continue
+
+                data = response.json()
+                city_name = city.split(",")[0]
+
+                weather_data = dict(
+                    weather=data.get("weather", [{}])[0].get("main"),
+                    temperature=data.get("main", {}).get("temp"),
+                    feels_like=data.get("main", {}).get("feels_like"),
+                    humidity=data.get("main", {}).get("humidity"),
+                    pressure=data.get("main", {}).get("pressure"),
+                    wind_speed=data.get("wind", {}).get("speed"),
+                    visibility=data.get("visibility"),
                 )
-            data = response.json()
-            weather_data = dict(
-                city=city.split(',')[0],
-                weather=data.get("weather", [{}])[0].get("main"),
-                temperature=data.get("main", {}).get("temp"),
-                feels_like=data.get("main", {}).get("feels_like"),
-                humidity=data.get("main", {}).get("humidity"),
-                pressure=data.get("main", {}).get("pressure"),
-                wind_speed=data.get("wind", {}).get("speed"),
-                visibility=data.get("visibility"),
-            )   
-            weather_entry = Weather(**weather_data)
-            try:
-                db.add(weather_entry)
-                db.commit()
-                db.refresh(weather_entry)
-            except Exception as e:
-                db.rollback()
-                print("Error saving weather:", e)
-                
-        db.close()
+
+                try:
+                    existing = db.query(Weather).filter(Weather.city == city_name).first()
+
+                    if existing:
+                        for key, value in weather_data.items():
+                            setattr(existing, key, value)
+                        print(f"Updated: {city_name}")
+                    else:
+                        new_entry = Weather(city=city_name, **weather_data)
+                        db.add(new_entry)
+                        print(f"Inserted: {city_name}")
+
+                    db.commit()
+                except SQLAlchemyError as e:
+                    db.rollback()
+                    print(f"DB Error for {city_name}: {e}")
         
     except TimeoutException:
         print("⚠ Weather API request timed out")
@@ -56,5 +71,5 @@ async def get_and_save_indian_weather_data():
     except Exception as e:
         print(f"Some error occurred while fetching and storing weather data: {e}")
         return
-
-# asyncio.run(get_and_save_indian_weather_data())
+    finally:
+        db.close()
