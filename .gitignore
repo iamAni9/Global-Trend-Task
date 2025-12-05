@@ -1,0 +1,90 @@
+# -----------------------
+# Python
+# -----------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pkl
+
+# Virtual environment
+env/
+venv/
+.venv/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# -----------------------
+# FastAPI / General
+# -----------------------
+.env
+.env.*
+*.sqlite3
+instance/
+*.db
+
+# Cache
+cache/
+*.log
+*.tmp
+*.bak
+
+# -----------------------
+# Editors
+# -----------------------
+# VS Code
+.vscode/
+.vscode/*
+
+# JetBrains
+.idea/
+
+# -----------------------
+# Alembic (optional)
+# -----------------------
+alembic/versions/*.pyc
+alembic/versions/*_tmp.py
+alembic/.cache/
+
+# -----------------------
+# Docker
+# -----------------------
+# Runtime
+docker-data/
+docker-volume/
+**/docker-compose.override.yml
+
+# Ignore all local-only docker-compose files
+docker-compose.*.yml
+!docker-compose.yml  # but keep the main file
+
+# -----------------------
+# OS Files
+# -----------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------
+# Logs
+# -----------------------
+*.log
+logs/
+log/
